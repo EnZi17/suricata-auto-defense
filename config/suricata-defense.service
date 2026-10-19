@@ -1,1 +1,16 @@
+[Unit]
+Description=Suricata Auto Defense - Tu dong chan IP tu canh bao Suricata
+After=network.target suricata.service
+Wants=suricata.service
 
+[Service]
+Type=simple
+ExecStart=/bin/bash /root/suricata-auto-defense/scripts/03_auto_defense.sh --daemon
+Restart=on-failure
+RestartSec=5
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,1 +1,52 @@
+# rules/local.rules
+# Nguyễn Ngọc Thái – Rule Engine
+# Luật Suricata tự viết cho Nhóm 12 (Automated IDS/IPS with Suricata)
+#
+# Dải SID:
+#   ICMP              1000001 – 1000009
+#   Nmap scan         1000010 – 1000019
+#   SSH brute-force   1000020 – 1000029
+#   Path Traversal    1000030 – 1000039
+#
+# priority = alert.severity trong eve.json
+#   03_auto_defense.sh chỉ chặn IP khi severity <= MIN_SEVERITY (mặc định 2)
+#   -> priority 3 : chỉ cảnh báo, không chặn
+#   -> priority 1-2: cảnh báo + tự động chặn bằng UFW
+#
+# Quản lý luật: sudo ./scripts/02_rule_manager.sh --list | --enable <sid> | --disable <sid>
 
+# ── ICMP (1000001 – 1000009) ──────────────────────────────────────────────────
+# Ping đơn lẻ: chỉ ghi nhận, tối đa 1 alert / 60s cho mỗi IP nguồn
+alert icmp any any -> $HOME_NET any (msg:"LOCAL ICMP Ping detected"; itype:8; threshold:type limit, track by_src, count 1, seconds 60; classtype:misc-activity; priority:3; sid:1000001; rev:1;)
+# Ping flood: >= 20 gói echo request trong 5s từ cùng một IP
+alert icmp any any -> $HOME_NET any (msg:"LOCAL ICMP Ping Flood"; itype:8; threshold:type both, track by_src, count 20, seconds 5; classtype:attempted-dos; priority:2; sid:1000002; rev:1;)
+# Gói ICMP kích thước lớn bất thường (kiểu Ping of Death)
+alert icmp any any -> $HOME_NET any (msg:"LOCAL ICMP Large Packet"; itype:8; dsize:>1000; threshold:type limit, track by_src, count 1, seconds 60; classtype:attempted-dos; priority:2; sid:1000003; rev:1;)
+
+# ── Nmap scan (1000010 – 1000019) ─────────────────────────────────────────────
+# SYN scan (nmap -sS / -sT): >= 20 gói SYN trong 10s từ cùng một IP
+alert tcp any any -> $HOME_NET any (msg:"LOCAL Nmap SYN Scan"; flow:stateless; flags:S,12; threshold:type both, track by_src, count 20, seconds 10; classtype:attempted-recon; priority:2; sid:1000010; rev:1;)
+# NULL scan (nmap -sN): gói TCP không bật cờ nào
+alert tcp any any -> $HOME_NET any (msg:"LOCAL Nmap NULL Scan"; flow:stateless; flags:0; threshold:type limit, track by_src, count 1, seconds 60; classtype:attempted-recon; priority:2; sid:1000011; rev:1;)
+# FIN scan (nmap -sF): chỉ bật cờ FIN, không có ACK
+alert tcp any any -> $HOME_NET any (msg:"LOCAL Nmap FIN Scan"; flow:stateless; flags:F,12; threshold:type limit, track by_src, count 1, seconds 60; classtype:attempted-recon; priority:2; sid:1000012; rev:1;)
+# XMAS scan (nmap -sX): bật FIN + PSH + URG
+alert tcp any any -> $HOME_NET any (msg:"LOCAL Nmap XMAS Scan"; flow:stateless; flags:FPU,12; threshold:type limit, track by_src, count 1, seconds 60; classtype:attempted-recon; priority:2; sid:1000013; rev:1;)
+
+# ── SSH brute-force (1000020 – 1000029) ───────────────────────────────────────
+# >= 5 kết nối mới tới cổng 22 trong 60s từ cùng một IP
+alert tcp any any -> $HOME_NET 22 (msg:"LOCAL SSH Brute-force Attempt"; flow:to_server; flags:S,12; detection_filter:track by_src, count 5, seconds 60; classtype:attempted-admin; priority:1; sid:1000020; rev:1;)
+# Banner SSH của thư viện thường dùng trong tool dò mật khẩu (hydra dùng libssh)
+alert ssh any any -> $HOME_NET 22 (msg:"LOCAL SSH Brute-force Tool Banner (libssh)"; flow:to_server; ssh.software; content:"libssh"; nocase; threshold:type limit, track by_src, count 1, seconds 60; classtype:attempted-admin; priority:1; sid:1000021; rev:1;)
+# Banner SSH của paramiko (script Python dò mật khẩu)
+alert ssh any any -> $HOME_NET 22 (msg:"LOCAL SSH Brute-force Tool Banner (paramiko)"; flow:to_server; ssh.software; content:"paramiko"; nocase; threshold:type limit, track by_src, count 1, seconds 60; classtype:attempted-admin; priority:1; sid:1000022; rev:1;)
+
+# ── Path Traversal (1000030 – 1000039) ────────────────────────────────────────
+# Dùng http.uri.raw vì Suricata chuẩn hóa http.uri (xóa "../") trước khi so khớp
+alert http any any -> $HOME_NET any (msg:"LOCAL Path Traversal ../ in URI"; flow:established,to_server; http.uri.raw; content:"../"; classtype:web-application-attack; priority:1; sid:1000030; rev:1;)
+# Dạng mã hóa URL: %2e%2e%2f, %2e%2e/
+alert http any any -> $HOME_NET any (msg:"LOCAL Path Traversal encoded %2e%2e"; flow:established,to_server; http.uri.raw; content:"%2e%2e"; nocase; classtype:web-application-attack; priority:1; sid:1000031; rev:1;)
+# Dạng mã hóa một nửa: ..%2f
+alert http any any -> $HOME_NET any (msg:"LOCAL Path Traversal encoded ..%2f"; flow:established,to_server; http.uri.raw; content:"..%2f"; nocase; classtype:web-application-attack; priority:1; sid:1000032; rev:1;)
+# Cố đọc file nhạy cảm /etc/passwd qua URI
+alert http any any -> $HOME_NET any (msg:"LOCAL Path Traversal /etc/passwd access"; flow:established,to_server; http.uri; content:"/etc/passwd"; nocase; classtype:web-application-attack; priority:1; sid:1000033; rev:1;)

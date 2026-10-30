@@ -30,4 +30,4 @@ tạo traffic → Suricata cảnh báo → UFW chặn IP → ghi log → --unban
 simulated traffic cần được kiểm tra với log để tránh khẳng định sai loại tấn công.
 Script giả lập hiện chưa có nội dung; vẫn là đầu việc cần hoàn thiện của Thái.
 
-Mã của Thái giữ nguyên theo commit 6ea5232. Module 03 của Thông chỉ bỏ lời gọi kênh thông báo đã loại khỏi phạm vi; giữ nguyên ALERT_COOLDOWN và logic UFW. File service gốc giữ nguyên; script cài đặt của Việt tạo drop-in đường dẫn triển khai trên máy Ubuntu.
+Mã của Thông và Thái giữ nguyên theo commit 6ea5232. Các cập nhật thuộc phần kiến trúc, cài đặt, tích hợp và kiểm thử của Việt; script cài đặt của Việt tạo drop-in đường dẫn triển khai trên máy Ubuntu.

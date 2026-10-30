@@ -13,6 +13,7 @@ BLOCK_LOG="$WORK/blocked.log"
 COOLDOWN_DIR="$WORK/cooldown"
 mkdir "$COOLDOWN_DIR"
 touch "$WORK/ufw"
+TELEGRAM_SCRIPT="$WORK/no-telegram-hook"
 FAIL_UFW=0
 ufw() {
     case "$1" in

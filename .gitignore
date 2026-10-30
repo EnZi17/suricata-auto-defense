@@ -1,3 +1,5 @@
 config/suricata-defense.conf
 *.log
 *.json
+__pycache__/
+*.pyc

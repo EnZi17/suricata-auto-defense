@@ -1,13 +1,12 @@
 #!/bin/bash
 # scripts/03_auto_defense.sh
 # Võ Minh Thông – Auto Defense & GitHub Management
-# Đọc eve.json realtime, chặn IP vi phạm bằng UFW, ghi log, gửi Telegram
+# Đọc eve.json realtime, chặn IP vi phạm bằng UFW, ghi log
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 CONFIG_FILE="$SCRIPT_DIR/../config/suricata-defense.conf"
 EVE_JSON="/var/log/suricata/eve.json"
 BLOCK_LOG="/var/log/suricata_blocked_ips.log"
-TELEGRAM_SCRIPT="$SCRIPT_DIR/04_telegram_alert.sh"
 PID_FILE="/tmp/auto_defense.pid"
 COOLDOWN_DIR="/tmp/suricata_cooldown"
 
@@ -109,10 +108,7 @@ block_ip() {
     # Cập nhật cooldown
     update_cooldown "$ip"
 
-    # Gửi cảnh báo Telegram (4 tham số: ip, signature, severity, action)
-    if [ -x "$TELEGRAM_SCRIPT" ]; then
-        bash "$TELEGRAM_SCRIPT" "$ip" "$signature" "$severity" "BLOCKED"
-    fi
+
 }
 
 # ── Gỡ chặn IP ────────────────────────────────────────────────────────────────

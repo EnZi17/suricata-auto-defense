@@ -1,0 +1,11 @@
+[Unit]
+Description=Suricata single-VM attacker network
+Before=suricata.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/suricata-lab/network.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
